@@ -92,6 +92,6 @@ class DBStorage:
             count = sum(
                 session.query(
                     model
-                ).count() for model in base_model.__subclasses__())
+                ).count() for model in classes.values())
         session.close()
         return count
