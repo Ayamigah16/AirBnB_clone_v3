@@ -3,7 +3,7 @@
 A new view for User object that handles all default RESTFul API actions
 """
 
-from flask import jsonify, request, abort
+from flask import Flask, jsonify, request, abort
 from api.v1.views import app_views
 from models import storage, Place, City, User
 
@@ -86,3 +86,44 @@ def update_place(place_id):
             setattr(place, key, value)
     place.save()
     return jsonify(place.to_dict()), 200
+
+
+@app_views.route('/places_search', methods=['POST'])
+def search_places():
+    """Search for Place objects based on
+    criteria in request body."""
+    if not request.json:
+        abort(400, 'Not a JSON')
+    
+    states = request.json.get('states', [])
+    cities = request.json.get('cities', [])
+    amenities = request.json.get('amenities', [])
+
+    if not states and not cities and not amenities:
+        places = storage.all('Place').values()
+        return jsonify([place.to_dict() for place in places])
+
+    place_ids = set()
+    for state_id in states:
+        state = storage.get('State', state_id)
+        if state:
+            for city in state.cities:
+                place_ids.update(
+                    [place.id for place in city.places]
+                )
+
+    for city_id in cities:
+        city = storage.get('City', city_id)
+        if city:
+            place_ids.update([place.id for place in city.places])
+
+    places = [storage.get('Place', place_id) for place_id in place_ids]
+    places = [place for place in places if place]
+
+    if amenities:
+        amenities_set = set(amenities)
+        places = [
+            place for place in places if amenities_set.issubset(
+                place.amenity_ids)]
+
+    return jsonify([place.to_dict() for place in places])
