@@ -1,13 +1,16 @@
 #!/usr/bin/python3
 """Rest Api driver"""
 
-from flask import Flask
+from flask import Flask, Blueprint, jsonify
 from api.v1.views import app_views
-import os
 from models import storage
+from flask_cors import CORS
 
 
 app = Flask(__name__)
+CORS(app, resources={r"/api/v1/*": {"origins": "0.0.0.0"}})
+# Allow all origins for now
+app.register_blueprint(app_views)
 
 
 @app.teardown_appcontext
@@ -23,7 +26,4 @@ def page_not_found(error):
 
 
 if __name__ == "__main__":
-    host = os.getenv('HBNB_API_HOST', '0.0.0.0')
-    port = int(os.getenv('HBNB_API_PORT', '5000'))
-    app.register_blueprint(app_views)
-    app.run(host=host, port=port, threaded=True)
+    app.run(host="0.0.0.0", port=5000, threaded=True)
